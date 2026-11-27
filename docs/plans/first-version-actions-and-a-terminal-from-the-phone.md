@@ -45,13 +45,17 @@ anything starts.
       SSH, and a pin over the whole Action
       ([ADR 0003](../adr/0003-the-action-file-is-strict-yaml-and-a-pin-covers-the-whole-action.md),
       ADR 0002 amended).
-- [ ] The Go module and the `action` package: parse, validate with the line of
+- [x] The Go module and the `action` package: parse, validate with the line of
       each fault, the canonical form and its hash, Parameters to environment,
       and the base64url encoding of the values. Choose the YAML library
       (`yaml/go-yaml` or `goccy/go-yaml`) by its line positions and strict
       decoding. Table tests, with Parameter values that hold shell syntax;
       golden tests of the canonical form; a test that the encoded command holds
-      only the safe characters.
+      only the safe characters: `go.yaml.in/yaml/v4`, Go 1.27.4, one validator
+      for the file and for JSON, and the command passed through sh, dash, bash
+      and zsh unchanged
+      ([ADR 0003](../adr/0003-the-action-file-is-strict-yaml-and-a-pin-covers-the-whole-action.md),
+      amendment).
 - [ ] `cmd/pult`: `check` (the file permissions, `sh -n` on each `run`, and a
       `$PULT_` name that no Parameter declares or a Parameter that `run` never
       uses), `list --json` and
