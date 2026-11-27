@@ -65,7 +65,7 @@ anything starts.
       Action: a refusal exits 125, a file with faults refuses every Run, and
       the ownership check follows a symbolic link
       ([ADR 0004](../adr/0004-pult-refuses-before-a-run-starts-and-then-replaces-itself-with-sh.md)).
-- [ ] Install `pult` on the laptop with its first Action file, and run each
+- [x] Install `pult` on the laptop with its first Action file, and run each
       Action from a terminal there: `unlock-vault` (terminal), `vault-status`
       and `lock-vault`, each with a `vault` choice; `keep-awake` (`hours` 1 to
       12, and `lid`, default false, which adds the `handle-lid-switch`
@@ -73,7 +73,13 @@ anything starts.
       the graphical session, which needs no admin authentication, unlike
       `lock-sessions`); `claude-session` (a `project` choice, in a new
       terminal workspace tab). First read the PATH that a Tailscale SSH command
-      gets. The repository gets `examples/actions.yaml` with generic values.
+      gets. The repository gets `examples/actions.yaml` with generic values:
+      `make install` into `~/.local/bin`, which a non-login `zsh -c` with
+      Tailscale SSH's fixed `PATH` finds through `~/.zshenv`; `keep-awake`
+      checks that its inhibitor is held, and `claude-session` opens its tab
+      in the herdr workspace of the project and shows Claude Code's screen
+      when it stops at a question on start, such as the trust question of a
+      new folder ([README](../../README.md)).
 
 ## The Core and the Bridge
 
