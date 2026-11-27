@@ -84,20 +84,27 @@ anything starts.
 ## The Core and the Bridge
 
 **Done when:** `go test ./...` passes; `gomobile bind` builds the Android
-library with the pinned toolchain; and a Go test client on the laptop, with no
-SSH key, logs in to a tailnet Machine through Tailscale SSH, pins its host key,
-lists its Actions, runs keep-awake with a Parameter and streams its output, and
-runs unlock-vault in a terminal session.
+library with the pinned toolchain; and a Go test client on the phone, run
+through `adb`, with no SSH key, logs in to the laptop through Tailscale SSH,
+pins its host key, lists its Actions, runs keep-awake with a Parameter and
+streams its output, and runs unlock-vault in a terminal session.
 
-- [ ] Spike: `golang.org/x/crypto/ssh` logs in to Tailscale SSH with no key
+- [x] Spike: `golang.org/x/crypto/ssh` logs in to Tailscale SSH with no key
       (the client's `none` method) and reads the host key the server shows.
+      A static client on the phone, run through `adb`, logged in to the
+      laptop, ran a command with its exit code and a PTY with a window
+      change. The findings (check mode holds the login, the Core sets the
+      host key algorithm, an app update stops the tunnel) are in the
+      [ADR 0002](../adr/0002-actions-live-on-each-machine-and-are-read-over-ssh.md)
+      amendment; the code stays on the branch `spike/tailscale-ssh`.
 - [ ] The Android toolchain on the laptop, at versions read from their sources
       at install time and pinned: the command-line tools, the SDK platform, the
       NDK and gomobile. A `make` target binds the Core.
-- [ ] Core: the Machine store, host key pins, SSH sessions (a command with its
-      output streams and exit code; a terminal with resize), Runs with their
-      history, Action pins, and the `pult run` command with the values encoded
-      (ADR 0002 amendment).
+- [ ] Core: the Machine store, host key pins (the Core sets the algorithm),
+      SSH sessions (a command with its output streams and exit code; a
+      terminal with resize; banners shown as they arrive, with no time limit
+      on a login held for a check), Runs with their history, Action pins, and
+      the `pult run` command with the values encoded (ADR 0002 amendments).
 - [ ] Bridge: decide its API (JSON values, callback interfaces for output and
       terminal bytes, errors), then build it with a panic guard and tests.
 

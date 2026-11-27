@@ -78,3 +78,43 @@ Machine, and both forms pass the same checks.
 Quoting for the remote shell depends on each Machine's login shell. Values on
 stdin would be echoed by a terminal Run's PTY. SSH `env` requests are refused
 by Tailscale SSH and sshd unless an `AcceptEnv` rule names them.
+
+## Amendment 2026-11-27: the login to Tailscale SSH, proven from the phone
+
+A spike proved the login before the Core was written. A static linux/arm64
+client built on `golang.org/x/crypto/ssh` v0.59.0 ran on the phone through
+`adb` and logged in to the laptop's Tailscale SSH (Tailscale 1.104.7) over the
+tailnet; two runs gave the same results. Its code stays on the branch
+`spike/tailscale-ssh` and is not merged.
+
+**No key is needed.** With no authentication method, the client sends only
+`none`, and Tailscale SSH accepts it for a tailnet identity its SSH rules
+allow, in about 300 ms. A command runs in the user's login shell; its exit
+status (0, and 125 for a refused pin) and its stdout and stderr arrive apart.
+A PTY session gets the size the client asks for, and a window change reaches
+it: the terminal reports the new size and the process gets `SIGWINCH`.
+
+**A rule in check mode holds the login until the Operator approves it in a
+browser.** During authentication the server sends one banner, "Tailscale SSH
+requires an additional check" with a `login.tailscale.com` URL, and then
+nothing until the check passes; it sets no time limit of its own. Logins after
+the approval send no banner until the rule's check period ends. The Core
+therefore shows each banner as it arrives, with its URL ready to open, and
+waits until the Operator cancels: a time limit on authentication would fail
+every login that needs a check.
+
+**The Core chooses the host key algorithm.** Tailscale SSH offers an Ed25519,
+an ECDSA P-256 and an RSA key. With its defaults, `x/crypto/ssh` negotiated the
+ECDSA key, so a pin would follow the library's preference order and break when
+that order changes. The Core sets the host key algorithm itself and pins that
+key; which algorithm is decided with the Core. On the Machine, `ssh-keygen -lf`
+reads Tailscale's ECDSA and RSA key files but not its Ed25519 file, which
+OpenSSL reads: that fingerprint comes from `openssl pkey -pubout`, hashed in the
+SSH wire form. All three fingerprints the spike received matched the keys on
+the Machine.
+
+**The tunnel can go away under a session.** Android stops an app's VPN when the
+app is updated, and Tailscale stays off until it is opened again, unless it is
+the always-on VPN. A connection open at that moment fails with "software caused
+connection abort". The Core reports it as a lost connection, not as a refused
+login.
