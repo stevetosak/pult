@@ -104,6 +104,8 @@ func probeHostKeys(addr, user string) {
 // so the login succeeds only when the server accepts "none".
 func login(addr, user string) (*ssh.Client, error) {
 	var hostKey ssh.PublicKey
+	started := time.Now()
+	elapsed := func() time.Duration { return time.Since(started).Round(time.Millisecond) }
 	cfg := &ssh.ClientConfig{
 		User: user,
 		HostKeyCallback: func(_ string, _ net.Addr, k ssh.PublicKey) error {
@@ -111,22 +113,20 @@ func login(addr, user string) (*ssh.Client, error) {
 			return nil
 		},
 		BannerCallback: func(message string) error {
-			fmt.Printf("== banner (%d bytes)\n%s\n", len(message), message)
+			fmt.Printf("== banner (%d bytes) after %s\n%s\n", len(message), elapsed(), message)
 			return nil
 		},
 		Timeout: dialTimeout,
 	}
-	started := time.Now()
 	client, err := ssh.Dial("tcp", addr, cfg)
 	fmt.Println("== login")
 	if hostKey != nil {
 		fmt.Printf("negotiated host key: %s %s\n", hostKey.Type(), ssh.FingerprintSHA256(hostKey))
 	}
 	if err != nil {
-		return nil, fmt.Errorf("login: %w", err)
+		return nil, fmt.Errorf("login after %s: %w", elapsed(), err)
 	}
-	fmt.Printf("method none accepted after %s; server %q\n",
-		time.Since(started).Round(time.Millisecond), client.ServerVersion())
+	fmt.Printf("method none accepted after %s; server %q\n", elapsed(), client.ServerVersion())
 	return client, nil
 }
 
