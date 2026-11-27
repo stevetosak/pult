@@ -8,6 +8,8 @@
 // and carries the values across the SSH hop ([RunArgs], [DecodeValues]).
 package action
 
+import "go.yaml.in/yaml/v4"
+
 // FileVersion is the only Action file version this package reads.
 const FileVersion = 1
 
@@ -15,6 +17,8 @@ const FileVersion = 1
 type File struct {
 	Version int
 	Actions []Action
+
+	root *yaml.Node // the YAML, for the positions of Check; nil when not parsed
 }
 
 // Action returns the Action with the id.

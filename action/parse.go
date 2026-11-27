@@ -51,6 +51,7 @@ func Parse(src []byte) (*File, error) {
 		r.faults.sortByPosition()
 		return nil, r.faults
 	}
+	file.root = root
 	return file, nil
 }
 
