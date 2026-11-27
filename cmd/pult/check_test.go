@@ -118,6 +118,21 @@ func TestCheckRefusesAFileOfAnotherUser(t *testing.T) {
 	}
 }
 
+// The example in the repository is the template for each Machine's own file,
+// so pult accepts it with no fault and no warning. The checkout's mode can let
+// the group write it, so the test checks a private copy.
+func TestTheExampleFilePassesCheck(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join("..", "..", "examples", "actions.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fx := newFixture(t, string(src))
+	fx.wantExit(fx.pult("check"), exitOK)
+	if !strings.HasSuffix(fx.stdout.String(), " Actions, no faults, 0 warnings\n") || fx.stderr.Len() > 0 {
+		t.Errorf("stdout = %q\nstderr = %q", fx.stdout.String(), fx.stderr.String())
+	}
+}
+
 func TestCheckWithoutAFile(t *testing.T) {
 	fx := newFixture(t, testFile)
 	if err := os.Remove(fx.file); err != nil {
