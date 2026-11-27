@@ -9,7 +9,9 @@ words are defined in [CONTEXT.md](CONTEXT.md); use them.
 ## Layout (planned)
 
 ```
-go.mod                  module github.com/stevetosak/pult
+go.mod                  module github.com/stevetosak/pult; gomobile and gobind pinned as tools
+toolchain.env           the Android SDK packages pinned (KEY=value); make toolchain-check, make bind
+scripts/                build helpers the Makefile runs
 action/                 the Action file format: parse, validate, canonical hash, Parameters to environment
 cmd/pult/               the machine command: check, list, run
 core/                   the app's Go logic: Machines, SSH sessions, Runs, history, pins

@@ -97,9 +97,16 @@ streams its output, and runs unlock-vault in a terminal session.
       host key algorithm, an app update stops the tunnel) are in the
       [ADR 0002](../adr/0002-actions-live-on-each-machine-and-are-read-over-ssh.md)
       amendment; the code stays on the branch `spike/tailscale-ssh`.
-- [ ] The Android toolchain on the laptop, at versions read from their sources
+- [x] The Android toolchain on the laptop, at versions read from their sources
       at install time and pinned: the command-line tools, the SDK platform, the
-      NDK and gomobile. A `make` target binds the Core.
+      NDK and gomobile. A `make` target binds the Core. The SDK packages are
+      pinned in `toolchain.env` (command-line tools 23.0, `android-37.2`, NDK
+      r30, minimum API 30), gomobile and gobind in `go.mod` as tools.
+      `make toolchain-check` compares the installed versions with the pins;
+      `make bind` names the pinned NDK and gobind, because gomobile otherwise
+      takes the newest NDK and the first gobind on the `PATH`, and binds the
+      Bridge (`mobile/`, for now only the Core's version) for arm64 and amd64
+      with 16 KB aligned libraries. The JDK is the system's and is not pinned.
 - [ ] Core: the Machine store, host key pins (the Core sets the algorithm),
       SSH sessions (a command with its output streams and exit code; a
       terminal with resize; banners shown as they arrive, with no time limit

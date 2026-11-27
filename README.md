@@ -47,3 +47,19 @@ actions: unlock, check and lock an rbw vault, keep the machine awake and allow
 sleep again, lock the screen, and start a Claude Code session with Remote
 Control in a herdr tab. `pult check` names each fault with its line, and
 `pult list` shows what the app will list.
+
+## Building the Core for Android
+
+`make bind` builds the Go Core into an Android library, `build/core.aar`, for
+the phone (arm64) and the emulator (amd64). It needs the Android SDK in
+`$ANDROID_HOME` (default `~/Android/Sdk`) and a JDK with `javac`. The SDK
+packages are pinned in [toolchain.env](toolchain.env), and gomobile and gobind
+in `go.mod`.
+
+`make toolchain-check` compares what is installed with the pins and prints the
+install command for each difference. The first step installs the command-line
+tools by hand: download the `cmdline-tools;latest` archive that
+[Google's SDK repository](https://dl.google.com/android/repository/repository2-3.xml)
+lists for the pinned version, check its SHA-1 against the repository, and
+unpack its `cmdline-tools` directory as `$ANDROID_HOME/cmdline-tools/latest`.
+`sdkmanager` then installs the platform and the NDK and checks each download.
