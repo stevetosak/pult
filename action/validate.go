@@ -40,8 +40,13 @@ func validateFile(r *report, f *File) {
 			r.add(path{"version"}, "version %d is not supported; this pult reads version %d", f.Version, FileVersion)
 		}
 	}
+	validateActions(r, f.Actions)
+}
+
+// validateActions checks each Action and refuses an id used twice.
+func validateActions(r *report, actions []Action) {
 	firstID := map[string]path{}
-	for i, a := range f.Actions {
+	for i, a := range actions {
 		at := path{"actions", i}
 		validateAction(r, at, a)
 		if a.ID == "" {

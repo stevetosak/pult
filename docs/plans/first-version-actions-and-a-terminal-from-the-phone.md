@@ -56,13 +56,15 @@ anything starts.
       and zsh unchanged
       ([ADR 0003](../adr/0003-the-action-file-is-strict-yaml-and-a-pin-covers-the-whole-action.md),
       amendment).
-- [ ] `cmd/pult`: `check` (the file permissions, `sh -n` on each `run`, and a
+- [x] `cmd/pult`: `check` (the file permissions, `sh -n` on each `run`, and a
       `$PULT_` name that no Parameter declares or a Parameter that `run` never
       uses), `list --json` and
       `run <id> [--param name=value]… [--params <base64url>] [--expect <hash>]`.
       `run` checks the values and the pin, then replaces itself with `sh -c`
       and the environment, with its input from `/dev/null` for an `output`
-      Action.
+      Action: a refusal exits 125, a file with faults refuses every Run, and
+      the ownership check follows a symbolic link
+      ([ADR 0004](../adr/0004-pult-refuses-before-a-run-starts-and-then-replaces-itself-with-sh.md)).
 - [ ] Install `pult` on the laptop with its first Action file, and run each
       Action from a terminal there: `unlock-vault` (terminal), `vault-status`
       and `lock-vault`, each with a `vault` choice; `keep-awake` (`hours` 1 to
