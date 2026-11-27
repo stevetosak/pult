@@ -206,3 +206,48 @@ Core computes it from the Action it shows the Operator, never from a hash that
   later Plan gives Pult one.
 - The repository's example file uses generic values; each Machine's own file
   stays on that Machine.
+
+## Amendment 2026-11-27: the parser and the limits the code adds
+
+**The parser is `go.yaml.in/yaml/v4`** (v4.0.0), the successor of
+`gopkg.in/yaml.v3` from the YAML organisation. A spike ran one struct and nine
+inputs through it and through `goccy/go-yaml` v1.19.2. goccy turned `0755` and
+`1.10` in a list of strings into `493` and `1.1` with no error, which is the
+trap this ADR names, and it took the first of two documents without a word. v4
+keeps a string as written, refuses a second document and returns every fault
+with its line and column. `go.yaml.in/yaml/v3` has the same engine, but its
+faults are only text and it reads only the first document.
+
+**The file is read in three stages:** the YAML itself, the types of the fields,
+then the rules of this ADR. A stage with faults stops the ones after it, and
+each stage reports all of its faults in line order. The rules work on the
+decoded Action and name a field by its path, so the Core checks an Action from
+`pult list --json` with the same code; for a file, the YAML node tree turns
+each path into a line.
+
+**Numbers and booleans have one spelling.** v4 still decodes `yes`, `no`, `on`
+and `off` into a boolean, so own code reads booleans and numbers from the node:
+a boolean is `true` or `false`, and a number is plain decimal with no leading
+zero, no sign but a minus and no separator (`0x0C`, `+3`, `1.0` and `"12"` are
+faults). These are also the forms the environment and the canonical form hold.
+
+**Anchors and aliases of whole values are allowed; merge keys (`<<`) are
+refused.** The three vault Actions share their `vault` Parameter through an
+alias, and the pin covers the decoded Action, so an alias changes no pin. Merge
+keys exist only in YAML 1.1, and the two parsers decoded them differently.
+
+**The limits this ADR left open** are set as follows. A choice has 1 to 32
+options, each one line of at most 60 characters and none listed twice. A
+Parameter's title is required, one line and at most 60 characters. A string's
+`max` is 1 to 1024, and an int's `min` and `max` are 64-bit. `description` may
+hold newlines; no other text field and no value holds a control character or a
+bidirectional control, since U+202E can make a title read as something else.
+`run` is valid UTF-8 with no NUL. The file is valid UTF-8 and at most 1 MiB. A
+field written as null (`~` or nothing) counts as not given.
+
+**A default and a value are both held in their environment form**, and the
+values cross SSH as a JSON object of strings (`{"hours":"2","lid":"false"}`),
+so `--params` and `--param name=value` pass one check. The environment of a Run
+drops every inherited `PULT_` variable before it adds the Parameters, so a
+`$PULT_` name that no Parameter declares is empty in the command. The encoded
+argument is at most 96 KiB, below the kernel's 128 KiB limit for one argument.
