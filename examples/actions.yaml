@@ -1,0 +1,131 @@
+# An Action file for pult (ADR 0003). Copy it to ~/.config/pult/actions.yaml
+# with mode 0600 in a directory with mode 0700, change the options to fit the
+# Machine, and run `pult check`.
+#
+# Each run carries all of its own lines, even where Actions repeat them: a
+# script outside this file is not covered by the Action pin, so a change to it
+# would not ask again on the phone.
+version: 1
+actions:
+  # The vault is rbw, a Bitwarden client. The option `personal` is rbw's
+  # default profile; any other option is the name of an RBW_PROFILE.
+  - id: unlock-vault
+    title: Unlock the vault
+    group: Vault
+    kind: terminal
+    params:
+      - &vault
+        name: vault
+        title: Vault
+        type: choice
+        options: [personal, work]
+        default: personal
+    # Without DBUS_SESSION_BUS_ADDRESS, pinentry asks in this terminal and not
+    # on the Machine's own screen.
+    run: |
+      case $PULT_VAULT in personal) unset RBW_PROFILE ;; *) export RBW_PROFILE="$PULT_VAULT" ;; esac
+      exec env -u DBUS_SESSION_BUS_ADDRESS rbw unlock
+
+  - id: vault-status
+    title: Vault status
+    group: Vault
+    params: [*vault]
+    run: |
+      case $PULT_VAULT in personal) unset RBW_PROFILE ;; *) export RBW_PROFILE="$PULT_VAULT" ;; esac
+      if rbw unlocked; then echo unlocked; else echo locked; exit 1; fi
+
+  - id: lock-vault
+    title: Lock the vault
+    group: Vault
+    params: [*vault]
+    run: |
+      case $PULT_VAULT in personal) unset RBW_PROFILE ;; *) export RBW_PROFILE="$PULT_VAULT" ;; esac
+      rbw lock && echo locked
+
+  # The inhibitor must outlive the SSH connection, so setsid -f detaches it;
+  # its output goes to /dev/null, or the connection would stay open.
+  - id: keep-awake
+    title: Keep awake
+    group: Session
+    description: Holds a sleep inhibitor for some hours. Allow sleep ends it early.
+    params:
+      - name: hours
+        title: Hours
+        type: int
+        min: 1
+        max: 12
+        default: 2
+      - name: lid
+        title: Also with the lid closed
+        type: bool
+        default: false
+    run: |
+      what=sleep:idle
+      if [ "$PULT_LID" = true ]; then what="$what:handle-lid-switch"; fi
+      until=$(date -d "+$PULT_HOURS hours" +%H:%M)
+      why="Pult keep-awake until $until"
+      setsid -f systemd-inhibit --what="$what" --who=pult --why="$why" \
+        sleep "${PULT_HOURS}h" >/dev/null 2>&1
+      sleep 1
+      if systemd-inhibit --list --no-legend | grep -qF "$why"; then
+        echo "awake until $until ($what)"
+      else
+        echo "keep-awake failed: systemd-inhibit holds no inhibitor" >&2
+        exit 1
+      fi
+
+  # Ending systemd-inhibit releases its inhibitor and ends its sleep too.
+  - id: allow-sleep
+    title: Allow sleep
+    group: Session
+    run: |
+      pkill -u "$(id -u)" -f '^systemd-inhibit .*--who=pult '
+      case $? in
+        0) echo "sleep allowed" ;;
+        1) echo "no keep-awake was held" ;;
+        *) exit 1 ;;
+      esac
+
+  - id: lock-screen
+    title: Lock the screen
+    group: Session
+    run: |
+      session=$(loginctl show-user "$(id -un)" -p Display --value)
+      if [ -z "$session" ]; then echo "no graphical session" >&2; exit 1; fi
+      loginctl lock-session "$session" && echo "locked session $session"
+
+  # A new tab in the project's herdr workspace (a new workspace when there is
+  # none), with Claude Code under Remote Control: it outlives the connection.
+  # When Claude Code stops at a question on start, such as the trust question
+  # of a folder it has not opened before, the Run shows the question; the
+  # answer is given on the Machine.
+  - id: claude-session
+    title: Claude Code session
+    group: Work
+    description: Opens Claude Code with Remote Control in a new tab of the project's herdr workspace.
+    params:
+      - name: project
+        title: Project
+        type: choice
+        options: [example-a, example-b]
+        default: example-a
+    run: |
+      dir="$HOME/Projects/$PULT_PROJECT"
+      if [ ! -d "$dir" ]; then echo "no directory $dir" >&2; exit 1; fi
+      list=$(herdr workspace list) || exit 1
+      ws=$(printf '%s' "$list" | jq -r --arg l "$PULT_PROJECT" \
+        'first(.result.workspaces[] | select(.label == $l) | .workspace_id) // empty')
+      if [ -n "$ws" ]; then
+        made=$(herdr tab create --workspace "$ws" --cwd "$dir" --label "claude rc" --no-focus) || exit 1
+      else
+        made=$(herdr workspace create --cwd "$dir" --label "$PULT_PROJECT" --no-focus) || exit 1
+      fi
+      pane=$(printf '%s' "$made" | jq -er '.result.root_pane.pane_id') || exit 1
+      name="rc-$(printf '%s' "$PULT_PROJECT" | tr A-Z a-z)-$(date +%H%M%S)"
+      if herdr agent start "$name" --kind claude --pane "$pane" -- --remote-control "$PULT_PROJECT" >/dev/null; then
+        echo "Claude Code $name started in pane $pane"
+      else
+        echo "Claude Code in pane $pane is not ready; its screen:" >&2
+        herdr pane read "$pane" --source visible >&2
+        exit 1
+      fi

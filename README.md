@@ -19,3 +19,31 @@ the `action` package it shares with the app exist; the app does not yet.
 - [The Action file is strict YAML, and a pin covers the whole Action](docs/adr/0003-the-action-file-is-strict-yaml-and-a-pin-covers-the-whole-action.md): the Action file format v1.
 - [pult refuses before a Run starts, and then replaces itself with sh](docs/adr/0004-pult-refuses-before-a-run-starts-and-then-replaces-itself-with-sh.md): the `pult` command.
 - [CONTEXT.md](CONTEXT.md): the words this project uses.
+
+## The pult command on a machine
+
+`make install` builds `pult` from the checkout into `~/.local/bin` (`PREFIX`
+changes the place). There are no release binaries yet.
+
+The app runs `pult` over SSH as a command. The SSH server starts it with the
+user's shell as `$SHELL -c`, which is not a login shell and reads neither
+`~/.profile` nor `~/.zprofile`; Tailscale SSH also gives that shell a fixed
+default `PATH`. `pult`, and each tool an action calls, must therefore be found
+on the `PATH` of a non-login `$SHELL -c`. For zsh, every shell reads
+`~/.zshenv`:
+
+```sh
+typeset -U path; path=("$HOME/.local/bin" $path)
+```
+
+Another shell needs the same line in the file that its non-login `-c` form
+reads, or `pult` in a directory of the default `PATH`, such as
+`/usr/local/bin`.
+
+The action file is `~/.config/pult/actions.yaml`, with mode 0600 in a
+directory with mode 0700; `pult` refuses a file that others can change.
+[examples/actions.yaml](examples/actions.yaml) is a template with the first
+actions: unlock, check and lock an rbw vault, keep the machine awake and allow
+sleep again, lock the screen, and start a Claude Code session with Remote
+Control in a herdr tab. `pult check` names each fault with its line, and
+`pult list` shows what the app will list.
