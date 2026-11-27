@@ -28,7 +28,11 @@ docs/plans/             Plans (kalfa reads docs/plans/*.md)
   it as JSON; streams come back through interfaces that Kotlin implements. The
   Bridge recovers a panic and returns it as an error.
 - A Parameter reaches a command only as an environment variable. Never build
-  command text from a value.
+  command text from a value: the Core sends values to `pult run` only as
+  `--params <base64url>` (ADR 0002, amendment).
+- The canonical form of an Action is held by golden tests. A change that alters
+  a golden hash is a breaking change: it needs a new canonical form beside
+  `v1`, never an edit of `v1` (ADR 0003).
 - `pult run` replaces itself with the command (exec). No Pult code reads or
   copies what is typed into a terminal Run, and nothing stores the Secret
   field's text or terminal input.

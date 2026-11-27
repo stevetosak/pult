@@ -63,3 +63,18 @@ no input.
 - Status and alerts come later as `pult` subcommands over SSH; a daemon is
   considered only when polling over SSH is not enough.
 - A Machine the phone cannot reach over SSH has no Actions in Pult.
+
+## Amendment 2026-11-27: the values cross SSH encoded
+
+SSH carries one command string, which the login shell on the Machine runs. A
+Parameter value written into that string as `--param name=value` would be read
+by that shell first, so `$(…)` in a value would run before `pult` starts. The
+Core therefore sends `pult run <id> --expect <hash> --params <base64url>`, where
+the last argument is the base64url form of a JSON object of the values. Every
+character of the arguments is then in `[A-Za-z0-9_-]`, and no login shell (zsh,
+bash, fish, dash) finds syntax in them; a Go test proves the character set. `--param name=value` stays for a person in a terminal on the
+Machine, and both forms pass the same checks.
+
+Quoting for the remote shell depends on each Machine's login shell. Values on
+stdin would be echoed by a terminal Run's PTY. SSH `env` requests are refused
+by Tailscale SSH and sshd unless an `AcceptEnv` rule names them.
