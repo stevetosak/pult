@@ -23,17 +23,18 @@ The YAML file on a Machine that lists its Actions; the `pult` command reads it.
 _Avoid_: catalog, config
 
 **Kind**:
-How an Action runs. `background`: without a terminal; the app shows its output and exit code. `terminal`: in a terminal on the phone, for prompts and interactive programs.
+How an Action runs. `output` (the default): without a terminal and with no input; the app shows its output and exit code. `terminal`: in a terminal on the phone, for prompts and interactive programs. Both end when the connection ends, unless the command detaches itself.
+_Avoid_: background (it suggests the Run outlives the connection)
 
 **Parameter**:
-A typed value the Operator gives when a Run starts. It reaches the command as an environment variable, never as text in the command.
+A typed value the Operator gives when a Run starts. It reaches the command as an environment variable, never as text in the command. The history keeps it, so a Parameter is never a password.
 _Avoid_: argument, variable (in design text)
 
 **Run**:
 One execution of an Action. The history keeps its Machine, Action, Parameters, start, duration and exit code; it never keeps terminal input.
 
 **Action pin**:
-The hash of an Action's canonical form that the Operator confirmed. A new or changed Action asks again before it runs.
+The hash of an Action's canonical form that the Operator confirmed, for one Machine. It covers the whole Action, its title too, so any change asks again before the Action runs.
 _Avoid_: trust hash
 
 **Host key pin**:

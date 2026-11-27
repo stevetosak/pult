@@ -35,20 +35,39 @@ lists them; `pult run keep-awake --param hours=1` holds a sleep inhibitor that
 the password vault; and a Run with a wrong `--expect` hash is refused before
 anything starts.
 
-- [ ] Decide in a grill the Action file format v1: the fields (id, title, group,
+- [x] Decide in a grill the Action file format v1: the fields (id, title, group,
       Kind, confirm, Parameters, run), the Parameter types and their limits, the
       environment names a Parameter gets, the canonical form that a pin
       covers, where the file lives, and the first Actions (vault unlock, vault
-      status, keep awake, lock screen, a Claude Code Remote Control session).
+      status, keep awake, lock screen, a Claude Code Remote Control session):
+      strict YAML at `~/.config/pult/actions.yaml`, the Kinds `output` and
+      `terminal`, Parameters as `PULT_<NAME>`, values base64url-encoded across
+      SSH, and a pin over the whole Action
+      ([ADR 0003](../adr/0003-the-action-file-is-strict-yaml-and-a-pin-covers-the-whole-action.md),
+      ADR 0002 amended).
 - [ ] The Go module and the `action` package: parse, validate with the line of
-      each fault, the canonical form and its hash, Parameters to environment.
-      Table tests, with Parameter values that hold shell syntax.
-- [ ] `cmd/pult`: `check`, `list --json` and
-      `run <id> [--param name=value]… [--expect <hash>]`. `run` checks the
-      values and the pin, then replaces itself with `sh -c` and the
-      environment.
+      each fault, the canonical form and its hash, Parameters to environment,
+      and the base64url encoding of the values. Choose the YAML library
+      (`yaml/go-yaml` or `goccy/go-yaml`) by its line positions and strict
+      decoding. Table tests, with Parameter values that hold shell syntax;
+      golden tests of the canonical form; a test that the encoded command holds
+      only the safe characters.
+- [ ] `cmd/pult`: `check` (the file permissions, `sh -n` on each `run`, and a
+      `$PULT_` name that no Parameter declares or a Parameter that `run` never
+      uses), `list --json` and
+      `run <id> [--param name=value]… [--params <base64url>] [--expect <hash>]`.
+      `run` checks the values and the pin, then replaces itself with `sh -c`
+      and the environment, with its input from `/dev/null` for an `output`
+      Action.
 - [ ] Install `pult` on the laptop with its first Action file, and run each
-      Action from a terminal there.
+      Action from a terminal there: `unlock-vault` (terminal), `vault-status`
+      and `lock-vault`, each with a `vault` choice; `keep-awake` (`hours` 1 to
+      12, and `lid`, default false, which adds the `handle-lid-switch`
+      inhibitor) and `allow-sleep`; `lock-screen` (`loginctl lock-session` of
+      the graphical session, which needs no admin authentication, unlike
+      `lock-sessions`); `claude-session` (a `project` choice, in a new
+      terminal workspace tab). First read the PATH that a Tailscale SSH command
+      gets. The repository gets `examples/actions.yaml` with generic values.
 
 ## The Core and the Bridge
 
@@ -65,7 +84,8 @@ runs unlock-vault in a terminal session.
       NDK and gomobile. A `make` target binds the Core.
 - [ ] Core: the Machine store, host key pins, SSH sessions (a command with its
       output streams and exit code; a terminal with resize), Runs with their
-      history, Action pins.
+      history, Action pins, and the `pult run` command with the values encoded
+      (ADR 0002 amendment).
 - [ ] Bridge: decide its API (JSON values, callback interfaces for output and
       terminal bytes, errors), then build it with a panic guard and tests.
 
